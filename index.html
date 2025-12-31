@@ -1,518 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
     <title>Custom Mapbox UI</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Mapbox -->
-    <link
-      href="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.css"
-      rel="stylesheet"
-    />
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.js"></script>
+    <link rel="stylesheet" href="./styles/main.css" />
+    <script src="./scripts/main.js" defer></script>
+</head>
 
-    <style>
-      :root {
-        --btn-default: #003840;
-        --btn-active: #004a55;
+<body>
+    <div class="main-layout-row">
+        <div class="main-content-col">
+            <div class="map-card">
+                <div id="map"></div>
 
-        --pill-default: #083238;
-        --pill-active: #ffffff;
-        --pill-active-text: #062a2f;
-      }
+                <!-- Top right controls -->
+                <div class="top-controls">
+                    <div class="map-type-btn-gap">
+                        <button class="btn active" onclick="setMapStyle('streets', this)">
+                            Map
+                        </button>
+                        <button class="btn" onclick="setMapStyle('satellite', this)">
+                            Satellite
+                        </button>
+                    </div>
 
-      body {
-        background: #062a2f;
-        font-family: 'Inter', Arial, sans-serif;
-      }
+                    <div class="map-zoom-btn-gap">
+                        <button class="btn" onclick="map.zoomOut()">−</button>
+                        <button class="btn" onclick="map.zoomIn()">+</button>
+                    </div>
+                </div>
+                <button class="map-filters-toggle" type="button" onclick="toggleMapFilters()">
+                    + Map Filters
+                </button>
+                <div class="bottom-controls">
+                    <button class="pill" type="button" data-type="food" role="tab" aria-selected="true">
+                        <img src="./assets/icons/food.svg" alt="" class="pill-icon" />
+                        <span>Food</span>
+                    </button>
 
-      .map-card {
-        width: 85%;
-        height: 500px;
-        margin: 40px auto;
-        border-radius: 16px;
-        overflow: hidden;
-        position: relative;
-        background: #fff;
-      }
+                    <button class="pill" type="button" data-type="transport" role="tab" aria-selected="false">
+                        <img src="./assets/icons/transport.svg" alt="" class="pill-icon" />
+                        <span>Transport</span>
+                    </button>
 
-      #map {
-        width: 100%;
-        height: 100%;
-      }
-
-      /* Top right controls */
-      .top-controls {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        display: flex;
-        gap: 12px;
-        z-index: 10;
-      }
-
-      .map-type-btn-gap {
-        display: flex;
-      }
-
-      .map-zoom-btn-gap {
-        display: flex;
-        gap: 8px;
-      }
-
-      .btn {
-        /* background: #0b3a40; */
-        background-color: var(--btn-default);
-        color: white;
-        border: none;
-        padding: 8px 12px;
-        cursor: pointer;
-      }
-
-      .btn.active {
-        background-color: var(--btn-active);
-      }
-
-      .btn:hover {
-        opacity: 0.9;
-      }
-
-      /* Bottom filter bar */
-      .bottom-controls {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 12px;
-        z-index: 10;
-
-        /* padding: 8px;
-        border-radius: 999px;
-        background: rgba(0, 0, 0, 0.35);
-        backdrop-filter: blur(10px); */
-      }
-
-      /* .pill {
-        background: #083238;
-        color: white;
-        padding: 10px 18px;
-        border-radius: 30px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        border: none;
-        outline: none;
-        box-shadow: none;
-      }
-
-      .pill-icon {
-        width: 16px;
-        height: 16px;
-        display: block;
-        flex-shrink: 0;
-      } */
-
-      .pill {
-        background: var(--pill-default);
-        color: white;
-        padding: 10px 18px;
-        border-radius: 30px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        border: none;
-        outline: none;
-        box-shadow: none;
-      }
-
-      .pill:hover {
-        opacity: 0.95;
-      }
-
-      .pill:active {
-        transform: scale(0.97);
-      }
-
-      /* ✅ active state */
-      .pill.is-active .pill-icon {
-        filter: brightness(0) saturate(100%) invert(36%) sepia(99%) saturate(747%) hue-rotate(153deg) brightness(95%) contrast(101%);
-      }
-      .pill-icon {
-        width: 18px;
-        height: 18px;
-      }
-
-      /* Mapbox Popup */
-
-      .mapboxgl-popup-content {
-        /* font-family: 'Inter', Arial, sans-serif; */
-        background: #004A55;
-        color: #fff;
-        font-size: 0.8rem;
-        font-weight: 100;
-        padding: 20px;
-        width: 40vw;
-        max-width: 264px;
-        min-width: 200px;
-        min-height: 63px;
-        max-height: 103px;
-        display: flex;
-        flex-direction: column;
-        border-radius: 0;
-      }
-
-      .mapboxgl-popup-content strong {
-        font-size: 0.9rem;
-        font-weight: 500;
-        display: block;
-      }
-
-      .mapboxgl-popup-tip {
-        border-top-color: #004A55 !important;
-      }
-
-      @media (min-width: 400px) {
-        .mapboxgl-popup-content {
-          width: 160px;
-        }
-      }
-
-      .popup-content-flex {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      /* Custom City Marker (Figma style, pin shape) */
-      .custom-city-marker {
-        width: 40px;
-        height: 52px;
-        position: relative;
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-      }
-      .marker-pin {
-        width: 40px;
-        height: 52px;
-        background: #003840;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-        /* Pin shape using clip-path for a teardrop */
-        clip-path: path('M20,0 C31,0 40,9 40,20 C40,36 20,52 20,52 C20,52 0,36 0,20 C0,9 9,0 20,0 Z');
-      }
-      .marker-img {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        object-fit: cover;
-        position: absolute;
-        top: 6px;
-        left: 50%;
-        transform: translateX(-50%);
-      }
-
-      /* Responsive Map Card for Mobile */
-      @media (max-width: 600px) {
-        .map-card {
-          width: 100vw;
-          height: 100dvh;
-          min-height: 100dvh;
-          margin: 0;
-          border-radius: 0;
-        }
-        #map {
-          width: 100vw;
-          height: 100dvh;
-          min-height: 100dvh;
-        }
-        .top-controls {
-          top: 10px;
-          left: 10px;
-          right: auto;
-          gap: 8px;
-          flex-direction: row;
-        }
-        .btn {
-          padding: 8px 10px;
-          font-size: 1rem;
-        }
-        .bottom-controls {
-          bottom: 16px;
-          left: 50%;
-          transform: translateX(-50%);
-          gap: 8px;
-          background: none;
-          box-shadow: none;
-          padding: 0;
-          border-radius: 0;
-          display: none;
-        }
-        .bottom-controls.is-visible {
-          display: flex;
-        }
-        .map-filters-toggle {
-          display: flex;
-          position: absolute;
-          left: 16px;
-          bottom: 16px;
-          z-index: 20;
-          background: var(--btn-default);
-          color: #fff;
-          border: none;
-          border-radius: 16px;
-          padding: 12px 20px;
-          font-size: 1.1rem;
-          align-items: center;
-          gap: 8px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-          cursor: pointer;
-        }
-      }
-      @media (max-width: 400px) {
-        .mapboxgl-popup-content {
-          min-width: 100px;
-          width: 90vw;
-          padding: 10px;
-        }
-        .pill {
-          font-size: 0.95rem;
-          padding: 7px 8px;
-        }
-        .map-filters-toggle {
-          font-size: 1rem;
-          padding: 10px 14px;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="map-card">
-      <div id="map"></div>
-
-      <!-- Top right controls -->
-      <div class="top-controls">
-        <div class="map-type-btn-gap">
-          <button class="btn active" onclick="setMapStyle('streets', this)">
-            Map
-          </button>
-          <button class="btn" onclick="setMapStyle('satellite', this)">
-            Satellite
-          </button>
+                    <button class="pill" type="button" data-type="amenities" role="tab" aria-selected="false">
+                        <img src="./assets/icons/amenities.svg" alt="" class="pill-icon" />
+                        <span>Amenities</span>
+                    </button>
+                </div>
+            </div>
+            <div class="nearby-routes-section">
+                <h2 class="nearby-routes-title">Nearby Routes</h2>
+                <div class="nearby-routes-list split-2">
+                    <div class="nearby-route-card">
+                        <div class="nearby-route-icon"><!-- anchor icon -->
+                            <svg width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16 4v16m0 0c-3.314 0-6-2.686-6-6m6 6c3.314 0 6-2.686 6-6" stroke="#fff"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                <circle cx="16" cy="8" r="2" fill="#fff" />
+                            </svg>
+                        </div>
+                        <div class="nearby-route-info">
+                            <div class="nearby-route-name">Port of Baltimore</div>
+                            <div class="nearby-route-distance">6 miles</div>
+                        </div>
+                        <div class="nearby-route-arrow">
+                            <svg width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 21l14-14M21 21V7H7" stroke="#fff" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="nearby-route-card">
+                        <div class="nearby-route-icon"><!-- airplane icon -->
+                            <svg width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M28 24L4 16l24-8-4 8 4 8zM4 16v4l8 2v-4l-8-2z" stroke="#fff" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="nearby-route-info">
+                            <div class="nearby-route-name">Baltimore Airport</div>
+                            <div class="nearby-route-distance">8 miles</div>
+                        </div>
+                        <div class="nearby-route-arrow">
+                            <svg width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 21l14-14M21 21V7H7" stroke="#fff" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="nearby-route-card">
+                        <div class="nearby-route-icon"><!-- city icon -->
+                            <svg width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="6" y="14" width="6" height="12" rx="1" fill="#fff" />
+                                <rect x="14" y="10" width="6" height="16" rx="1" fill="#fff" />
+                                <rect x="22" y="18" width="4" height="8" rx="1" fill="#fff" />
+                            </svg>
+                        </div>
+                        <div class="nearby-route-info">
+                            <div class="nearby-route-name">Downtown Baltimore</div>
+                            <div class="nearby-route-distance">11.4 miles</div>
+                        </div>
+                        <div class="nearby-route-arrow">
+                            <svg width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 21l14-14M21 21V7H7" stroke="#fff" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <div class="map-zoom-btn-gap">
-          <button class="btn" onclick="map.zoomOut()">−</button>
-          <button class="btn" onclick="map.zoomIn()">+</button>
+        <div class="main-sidebar-col">
+            Blank for now
         </div>
-      </div>
-      <button class="map-filters-toggle" type="button" onclick="toggleMapFilters()">
-        + Map Filters
-      </button>
-      <div class="bottom-controls">
-        <button
-          class="pill"
-          type="button"
-          data-type="food"
-          role="tab"
-          aria-selected="true"
-        >
-          <img src="./assets/icons/food.svg" alt="" class="pill-icon" />
-          <span>Food</span>
-        </button>
-
-        <button
-          class="pill"
-          type="button"
-          data-type="transport"
-          role="tab"
-          aria-selected="false"
-        >
-          <img src="./assets/icons/transport.svg" alt="" class="pill-icon" />
-          <span>Transport</span>
-        </button>
-
-        <button
-          class="pill"
-          type="button"
-          data-type="amenities"
-          role="tab"
-          aria-selected="false"
-        >
-          <img src="./assets/icons/amenities.svg" alt="" class="pill-icon" />
-          <span>Amenities</span>
-        </button>
-      </div>
     </div>
+</body>
 
-    <script>
-      mapboxgl.accessToken =
-        "pk.eyJ1IjoicGhvbGxpcy1wcm9sb2dpcyIsImEiOiJjbWl4cGt1ajUwN2JpM2RvOXdqOWFmb3U3In0.RyiaedumDC0gnw6FeFKqrA ";
-
-      const map = new mapboxgl.Map({
-        container: "map",
-        style: "mapbox://styles/phollis-prologis/cmixr0gqa000d01rj1py34kjg",
-        attributionControl: false,
-        // center: [-76.6122, 39.2904], // Baltimore
-        center: [-76.525583, 39.25904],
-        zoom: 12,
-      });
-
-      function setMapStyle(style, el) {
-        setStyle(style);
-        const buttons = el.parentElement.querySelectorAll(".btn");
-        buttons.forEach((btn) => btn.classList.remove("active"));
-        el.classList.add("active");
-      }
-
-      function setStyle(type) {
-        map.setStyle(
-          type === "satellite"
-            ? "./styles-hybrid/style-hybrid.json"
-            : // : "mapbox://styles/phollis-prologis/cmixr0gqa000d01rj1py34kjg"
-              "./styles-map/style-map.json"
-        );
-      }
-
-      // Toggle Map Filters (mobile)
-      function toggleMapFilters() {
-        const filters = document.querySelector('.bottom-controls');
-        filters.classList.toggle('is-visible');
-      }
-
-      // Hide filter pills by default on mobile
-      function handleMobileFilters() {
-        const filters = document.querySelector('.bottom-controls');
-        const toggleBtn = document.querySelector('.map-filters-toggle');
-        if (window.innerWidth <= 600) {
-          filters.classList.remove('is-visible');
-          toggleBtn.style.display = 'flex';
-        } else {
-          filters.classList.add('is-visible');
-          toggleBtn.style.display = 'none';
-        }
-      }
-      window.addEventListener('resize', handleMobileFilters);
-      window.addEventListener('DOMContentLoaded', handleMobileFilters);
-
-      map.on("load", () => {
-        // Route line
-        map.addSource("route", {
-          type: "geojson",
-          data: {
-            type: "Feature",
-            geometry: {
-              type: "LineString",
-              coordinates: [
-                [-76.615, 39.295],
-                [-76.61, 39.292],
-                [-76.605, 39.288],
-              ],
-            },
-          },
-        });
-
-        // Custom city marker at map center
-        // Accept city image from a variable 
-        const cityData = {
-          img: './assets/icons/city.svg', // Replace with dynamic value from JSON
-          name: 'City Center',
-        };
-        const cityMarkerEl = document.createElement('div');
-        cityMarkerEl.className = 'custom-city-marker';
-        cityMarkerEl.innerHTML = `
-          <div class="marker-pin">
-            <img src="${cityData.img}" alt="${cityData.name}" class="marker-img" />
-          </div>
-        `;
-        new mapboxgl.Marker({ element: cityMarkerEl, anchor: 'bottom' })
-          .setLngLat([-76.525583, 39.25904])
-          .addTo(map);
-
-        // Markers
-        //CO-ORDINATES:
-        const points = {
-          food: [
-            { lngLat: [-76.531397, 39.257645], name: "Joe's Diner", address: "123 Main St" },
-            { lngLat: [-76.53085, 39.263673], name: "Pizza Place", address: "456 Elm St" },
-            { lngLat: [-76.526655, 39.262439], name: "Cafe Good Eats", address: "789 Oak Ave" },
-            { lngLat: [-76.51244, 39.25816], name: "Burger Spot", address: "321 Maple Rd" },
-          ],
-          transport: [
-            { lngLat: [-76.5201, 39.2601], name: "Bus Stop A", address: "100 Transit Blvd" },
-            { lngLat: [-76.5185, 39.2623], name: "Metro Station", address: "200 Metro Ave" },
-          ],
-          amenities: [
-            { lngLat: [-76.5252, 39.2598], name: "City Park", address: "Park Lane" },
-          ],
-        };
-
-        // MARKER COLORS:
-        const colors = {
-          food: "#88FF8D",
-          transport: "#DBD94B",
-          amenities: "#4BA3DB",
-        };
-
-        // Create markers for selected POI/s
-        const markersByLayer = {};
-        for (const layer in points) {
-          markersByLayer[layer] = points[layer].map((item) => {
-            const marker = new mapboxgl.Marker({ color: colors[layer] }).setLngLat(item.lngLat);
-            // Use flex column for popup content
-            const popupContent = `
-              <div class="popup-content-flex">
-                <strong>${item.name}</strong>
-                <span>${item.address}</span>
-              </div>
-            `;
-            const popup = new mapboxgl.Popup({ offset: 25 })
-              .setHTML(popupContent);
-            marker.setPopup(popup);
-            return marker;
-          });
-        }
-
-        // Toggle helper functions
-        const enabled = new Set();
-
-        function toggleLayer(layer) {
-          const list = markersByLayer[layer] || [];
-          const turnOn = !enabled.has(layer);
-
-          if (turnOn) {
-            enabled.add(layer);
-            list.forEach((m) => m.addTo(map));
-          } else {
-            enabled.delete(layer);
-            list.forEach((m) => m.remove());
-          }
-
-          return turnOn;
-        }
-
-        // Single event listener
-        const controls = document.querySelector(".bottom-controls");
-        controls.addEventListener("click", (e) => {
-          const btn = e.target.closest(".pill");
-          if (!btn) return;
-
-          const layer = btn.dataset.type; 
-          const isOn = toggleLayer(layer);
-
-          // active UI
-          btn.classList.toggle("is-active", isOn);
-          btn.setAttribute("aria-selected", isOn ? "true" : "false");
-        });
-      });
-    </script>
-  </body>
 </html>
