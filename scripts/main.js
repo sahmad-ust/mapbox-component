@@ -248,6 +248,24 @@ const icons = {
   }
 
   const enabled = new Set();
+  // disable the pins POI inside popup
+  function resetPillsAndPins() {
+  // Remove active UI for pills
+  controls.querySelectorAll(".pill").forEach((btn) => {
+    btn.classList.remove("is-active");
+    btn.setAttribute("aria-selected", "false");
+  });
+
+  // Remove all markers from map and clear enabled layers
+  enabled.forEach((layer) => {
+    (markersByLayer[layer] || []).forEach((m) => m.remove());
+  });
+  enabled.clear();
+}
+
+// Make it callable from outside (open map click)
+window.resetPillsAndPins = resetPillsAndPins;
+
 
   function toggleLayer(layer) {
     const list = markersByLayer[layer] || [];
@@ -325,6 +343,8 @@ const openBtns = document.querySelectorAll('.js-open-map');
 const closeBtn = overlay.querySelector('.map-overlay-close');
 
 function openMapOverlay() {
+  if (window.resetPillsAndPins) window.resetPillsAndPins();
+
   mapCard.classList.add('is-popup');
   overlay.classList.add('active');
 
